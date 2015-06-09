@@ -63,47 +63,6 @@ router.get('/', ensureAuthenticated, function(req, res, next) {
 		});
 });
 
-//calendar event creation
-
-router.get('/add_event', ensureAuthenticated, function(req, res, next) {
-	//old code to post automatically [not working]
-	// var calendarId = 'test'
-	// console.log('this is add_event');
-	// var options = {
- //  host: 'www.googleapis.com',
- //  path: '/calendar/v3/calendars/' + calendarId + '/events',
- //  port: '80',
- //  rejectUnauthorized: false,
- //  requestCert: true,
- //  secureOptions: require('constants').SSL_OP_NO_TLSv1_2,
- //  agent: false,
- //  //This is the only line that is new. `headers` is an object with the headers to request
- //  method: 'POST'
-	// };
-	// callback = function(response){
-		
-	//   var str = ''
-	//   response.on('data', function (chunk) {
-	//     str += chunk;
-	//   });
-
-	//   response.on('end', function () {
-	//     console.log(str);
-	//   });
-	// }
-
-	// var req = http.request(options, callback);
-	// req.on('error', function(e) {
-	// 	console.log(e.message);
-	// });
-	// req.end();
-
-	// new code redirects to google calendar invite
-
-
-
-
-});
 
 ///////authentication routes////////////
 
@@ -142,6 +101,7 @@ function getAllSlots(err, allSlots, responsePage, res){
 		for ( var i = 0; i < allSlots.length; i++){
 			var time = new Date(allSlots[i]['datetime']);
 			if (new Date() < time) {
+				console.log(moment(time).format('llll'));
 				trackTimeSlots.push(moment(time).format('llll'));
 			}
 		}
@@ -151,9 +111,6 @@ function getAllSlots(err, allSlots, responsePage, res){
 		}
 
 		my_sheet.getRows(responsePage, options, function(err, allMentors){
-			//debugging
-			// console.log("$$$$$$$$$$GETTING ROWS \n \n\n")
-			// console.log(allMentors)
 			getMentorSlotObject(trackTimeSlots, allMentors, res);
 		});
 }
@@ -165,21 +122,22 @@ function getMentorSlotObject(trackTimeSlots, allMentors, res){
 		var pastMentors = [];
 		var upcoming = [];
 
+
 		for(var i = 0; i < allMentors.length; i++){
 			var mentorTime = new Date(allMentors[i]['datetime']);
-
 						//reformat date to be prettier
-			allMentors[i]['datetime'] = moment(mentorTime).format("lll"); 
+			allMentors[i]['datetime'] = moment(mentorTime).format("llll"); 
 
 			var start = moment(mentorTime);
 			allMentors[i]['datetimeCalendar'] = start.format("YYYYMMDDTHHmmss") + "/" + start.add(1, 'hours').format("YYYYMMDDTHHmmss");
 			
-			var slotIndex = trackTimeSlots.indexOf(mentorTime.toString());
+			var slotIndex = trackTimeSlots.indexOf(allMentors[i]['datetime']);
 
-			//separate mentors by past and upcoming
-			if (mentorTime > new Date()) {
+			//separate mentors by past and upcoming, all mentors for the current day will be upcoming
+			if (mentorTime.getTime() > new Date(new Date().toLocaleDateString())) {
 				upcoming.push(allMentors[i]);
 			}
+
 			else {
 				pastMentors.push(allMentors[i]);
 			}
